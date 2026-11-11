@@ -48,6 +48,12 @@ Mark as done:
 `<localleader>X`   Mark all tasks as done  
 `<localleader>D`   Move completed tasks to done.txt  
 
+Sub-tasks:  
+A sub-task is a line indented (one level only) under a task.  
+`<localleader>o`   Add a sub-task under the current task, copying the parent's +projects and @contexts  
+
+Completing a task also completes its sub-tasks. Sorting keeps sub-tasks under their parent, and `<localleader>D` moves a task and its sub-tasks (indentation preserved) once all of them are done.  
+
 This plugin detects any text file with the name todo.txt or done.txt with an optional prefix that ends in a period (e.g. second.todo.txt, example.done.txt).
 
 If you want the help installed, run ":helptags ~/.vim/doc" inside vim after having copied the files.

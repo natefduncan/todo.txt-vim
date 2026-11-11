@@ -43,6 +43,15 @@ CONTENTS                                                       *todo-contents*
 	`<localleader>X`   Mark all tasks as done
 	`<localleader>D`   Move completed tasks to done.txt
 
+1.5 Sub-tasks:                                            *todo-commands-subtasks*
+	A sub-task is a line indented (one level only) under a task.
+	`<localleader>o`   Add a sub-task under the current task, copying the
+	                   parent's +projects and @contexts
+
+	Completing a task also completes its sub-tasks. Sorting keeps
+	sub-tasks under their parent. `<localleader>D` moves a task and its
+	sub-tasks (keeping the indentation) once all of them are done.
+
 See :h <localleader> for more information about the commands' prefix.
 
 ==============================================================================

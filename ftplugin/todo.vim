@@ -18,8 +18,8 @@ setlocal wrapmargin=0
 
 " Mappings {{{1
 " Sort tasks {{{2
-nnoremap <script> <silent> <buffer> <localleader>s :%sort<CR>
-vnoremap <script> <silent> <buffer> <localleader>s :sort<CR>
+nnoremap <script> <silent> <buffer> <localleader>s :%call todo#txt#sort()<CR>
+vnoremap <script> <silent> <buffer> <localleader>s :call todo#txt#sort()<CR>
 nnoremap <script> <silent> <buffer> <localleader>s@ :%call todo#txt#sort_by_context()<CR>
 vnoremap <script> <silent> <buffer> <localleader>s@ :call todo#txt#sort_by_context()<CR>
 nnoremap <script> <silent> <buffer> <localleader>s+ :%call todo#txt#sort_by_project()<CR>
@@ -50,6 +50,9 @@ vnoremap <script> <silent> <buffer> <localleader>d :call todo#txt#replace_date()
 nnoremap <script> <silent> <buffer> <localleader>x :call todo#txt#mark_as_done()<CR>
 vnoremap <script> <silent> <buffer> <localleader>x :call todo#txt#mark_as_done()<CR>
 
+" Add sub-task {{{2
+nnoremap <script> <silent> <buffer> <localleader>o :call todo#txt#add_subtask()<CR>
+
 " Mark all done {{{2
 nnoremap <script> <silent> <buffer> <localleader>X :call todo#txt#mark_all_as_done()<CR>
 
@@ -64,24 +67,42 @@ setlocal foldtext=s:todo_fold_text()
 
 " s:todo_fold_level(lnum) {{{2
 function! s:todo_fold_level(lnum)
-    " The match function returns the index of the matching pattern or -1 if
-    " the pattern doesn't match. In this case, we always try to match a
-    " completed task from the beginning of the line so that the matching
-    " function will always return -1 if the pattern doesn't match or 0 if the
-    " pattern matches. Incrementing by one the value returned by the matching
-    " function we will return 1 for the completed tasks (they will be at the
-    " first folding level) while for the other lines 0 will be returned,
-    " indicating that they do not fold.
-    return match(getline(a:lnum),'^[xX]\s.\+$') + 1
+    " Completed tasks (together with their sub-tasks) are folded into one
+    " fold. An open task that has sub-tasks is folded together with them.
+    " Everything else doesn't fold.
+    let l:group = s:todo_fold_group(a:lnum)
+    if l:group == ''
+        return 0
+    endif
+    " A fold of open tasks starts at its parent line. A fold of completed
+    " tasks starts wherever the previous line is not completed.
+    if l:group == 'family'
+        return todo#txt#is_subtask(a:lnum) ? 1 : '>1'
+    endif
+    return (a:lnum > 1 && s:todo_fold_group(a:lnum - 1) == 'family') ? '>1' : 1
+endfunction
+
+" Returns 'done', 'family' (an open task with sub-tasks) or ''.
+function! s:todo_fold_group(lnum)
+    let l:top = todo#txt#family_start(a:lnum)
+    if getline(l:top) =~# '^\s*[xX]\s.\+$'
+        return 'done'
+    elseif todo#txt#family_end(l:top) > l:top
+        return 'family'
+    endif
+    return ''
 endfunction
 
 " s:todo_fold_text() {{{2
 function! s:todo_fold_text()
-    " The text displayed at the fold is formatted as '+- N Completed tasks'
-    " where N is the number of lines folded.
-    return '+' . v:folddashes . ' '
-                \ . (v:foldend - v:foldstart + 1)
-                \ . ' Completed tasks '
+    let l:count = v:foldend - v:foldstart + 1
+    if getline(v:foldstart) =~# '^\s*[xX]\s'
+        " '+- N Completed tasks'
+        return '+' . v:folddashes . ' ' . l:count . ' Completed tasks '
+    endif
+    " '+- <parent task> (N sub-tasks)'
+    return '+' . v:folddashes . ' ' . getline(v:foldstart)
+                \ . ' (' . (l:count - 1) . ' sub-tasks) '
 endfunction
 
 " Restore context {{{1
